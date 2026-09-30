@@ -32,6 +32,17 @@ The exercise is deliberately open-ended. This document records the assumptions m
 - **A15** Gaps between readings are bridged with a straight line, however long.
 - **A16** The haversine formula is implemented in our own code rather than taken from a NuGet package. It is about ten lines and covered by tests against known distances, and avoiding a dependency avoids supply-chain and upgrade risk. The most trusted geo package, NetTopologySuite, calculates flat distances and doesn't solve this directly; the packages that do are maintained by single individuals. GeographicLib.NET would be the choice if higher accuracy were needed.
 
+### Country lookup
+
+- **A17** Countries are resolved offline, by testing which country boundary contains the point (point-in-polygon), rather than by calling an external reverse-geocoding service. It is fast, free, deterministic and testable, and no truck positions (personal data, together with the driver) are sent to a third party. An external service could be added behind the same `ICountryResolver` interface without changing the domain.
+- **A18** Country boundaries come from Natural Earth's 1:50m admin-0 countries dataset (public domain), embedded in the Infrastructure assembly. The file is taken unmodified from the `nvkelso/natural-earth-vector` repository (version 5.x, last changed in commit `9380cca`, May 2022).
+- **A19** Point-in-polygon tests use NetTopologySuite, the most widely used .NET geometry library (EF Core's spatial support is built on it). Unlike the distance formula (A16), this is too large to write ourselves.
+- **A20** Countries are identified by ISO 3166-1 alpha-2 codes (e.g. `DE`), taken from Natural Earth's `ISO_A2_EH` field. The plain `ISO_A2` field is `-99` for France and Norway, among others. Kosovo is returned as `XK`, a code in common use but not an official ISO code. Areas with no code in the data (Somaliland, Northern Cyprus, Siachen Glacier) resolve to no country.
+- **A21** Boundaries are simplified, so points close to a border or coastline can be assigned to the wrong country or to none. At the 1:50m scale this can be several hundred metres or more; Copenhagen's city centre, for example, resolves to no country. The more detailed 1:10m dataset (about 13 MB) gives the same result there, so it wasn't worth the size. This matters for DFDS, since ports and harbours lie on the coast.
+- **A22** Points at sea, including on ferries, resolve to no country. The domain returns null for these rather than guessing.
+- **A23** A point exactly on a border between two countries is assigned to whichever country is found first.
+- **A24** `ICountryResolver` is defined in the Domain project and implemented in Infrastructure, so dependencies point inwards: Infrastructure depends on Domain, never the reverse. The code that needs country lookup (the February query) therefore doesn't depend on NetTopologySuite or the boundary data, and can be tested with a simple fake. Country lookup is a need of a use case rather than a domain concept, so the interface will move to an Application project when the February query is built. Creating that project now, for a single interface, would be premature.
+
 ### Open questions
 
 To be decided when the February 2024 query is built:
@@ -52,3 +63,6 @@ To be decided when the February 2024 query is built:
 - **O8** Snapping readings to the road network (e.g. OSRM or Valhalla) for a more accurate distance.
 - **O9** Calculating distances in the database. With spatial storage (e.g. PostGIS or SQL Server's `geography` type), distance calculations could move to the database layer. Storage is out of scope for now (O1).
 - **O10** Independent verification of the haversine implementation. The author, Anders Poulsen, has not verified the formula or its implementation himself. The implementation was written by Claude (an AI assistant) and trusted, since learning the underlying mathematics well enough to check it was too much for the time available. The tests give partial assurance: 1° of latitude equals 111.195 km, which follows from basic geometry (2π × 6,371 km ÷ 360), and Hamburg to Munich comes out at about 612 km, which matches published straight-line distances. The other reference values in the tests were produced with the same formula, so they only confirm that the code matches the formula as written.
+- **O11** External reverse-geocoding services (e.g. Nominatim, Azure Maps, Google). They are more accurate near borders and coastlines, but bring rate limits, cost, network dependency and privacy concerns. They could be added behind `ICountryResolver`.
+- **O12** Keeping the boundary data up to date, and handling disputed borders beyond what Natural Earth provides.
+- **O13** Assigning a country to readings that resolve to none, for example using the nearest country or the previous reading's country. This matters for coastal areas and ports (A21) and becomes relevant for the February query.
