@@ -25,12 +25,33 @@ This builds the solution and runs all tests. No database, network access or conf
 | 3. Country for a GPS coordinate | [`ICountryResolver`](src/Application/ICountryResolver.cs), [`NaturalEarthCountryResolver`](src/Infrastructure/NaturalEarthCountryResolver.cs) | Offline point-in-polygon lookup against Natural Earth country boundaries, using NetTopologySuite. Returns an ISO country code, or none at sea. |
 | 4. The February 2024 question | [`DistanceDrivenQuery`](src/Application/DistanceDrivenQuery.cs), [`DriverFilters`](src/Application/DriverFilters.cs) | Kilometres driven in a country during a period, by the drivers a filter selects. |
 
-The brief's question is asked like this:
+## Using the code
+
+**Part 2: distance for a Truck Plan** ([TruckPlanTests](tests/Domain.Tests/TruckPlanTests.cs))
+
+```csharp
+var plan = new TruckPlan(TruckPlanId.New(), driver, truck);
+plan.AddReading(new PositionReading(truck.Id, new DateTimeOffset(2024, 2, 12, 8, 0, 0, TimeSpan.Zero), new Coordinate(53.5511, 9.9937)));  // Hamburg
+plan.AddReading(new PositionReading(truck.Id, new DateTimeOffset(2024, 2, 12, 9, 0, 0, TimeSpan.Zero), new Coordinate(54.0717, 9.9900)));  // Neumünster
+
+double km = plan.DistanceDrivenKm();
+```
+
+**Part 3: country for a GPS coordinate** ([NaturalEarthCountryResolverTests](tests/Infrastructure.Tests/NaturalEarthCountryResolverTests.cs))
+
+```csharp
+var resolver = new NaturalEarthCountryResolver();
+
+resolver.GetCountryCode(new Coordinate(53.5511, 9.9937));  // "DE" (Hamburg)
+resolver.GetCountryCode(new Coordinate(56.0, 3.0));        // null (North Sea)
+```
+
+**Part 4: the February 2024 question** ([FebruaryQueryEndToEndTests](tests/Application.Tests/FebruaryQueryEndToEndTests.cs))
 
 ```csharp
 var query = new DistanceDrivenQuery(new NaturalEarthCountryResolver());
 
-var km = query.KilometresDriven(
+double km = query.KilometresDriven(
     plans,
     countryCode: "DE",
     periodStart: new DateTimeOffset(2024, 2, 1, 0, 0, 0, TimeSpan.Zero),
@@ -38,7 +59,7 @@ var km = query.KilometresDriven(
     includeDriver: DriverFilters.OlderThan(50));
 ```
 
-No real data came with the exercise, so there is no single number to report. [FebruaryQueryEndToEndTests](tests/Application.Tests/FebruaryQueryEndToEndTests.cs) answers the question for a sample drive from Hamburg across the Danish border, using the real country boundaries.
+No real data came with the exercise, so there is no single number to report. The end-to-end test answers the question for a sample drive from Hamburg across the Danish border, using the real country boundaries.
 
 ## Project structure
 
