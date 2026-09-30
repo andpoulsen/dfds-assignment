@@ -72,8 +72,14 @@ The full reasoning is in [docs/ASSUMPTIONS.md](docs/ASSUMPTIONS.md). The most im
 
 ## How this was built
 
-The code was written by Claude Opus 5.5, in a conversation where I, explained how I wanted the assignment solved as if I was pair/mob programming with another person at the keyboard. I spoke rather than typed, using the dictation tool Wispr Flow.
+The code was written by Claude Opus 5.5, in a conversation where I explained how I wanted the assignment solved as if I was pair/mob programming with another person at the keyboard. I spoke rather than typed, using the dictation tool Wispr Flow.
 
-I started by modelling the domain, together with its unit tests. I  moved on to the next parts of the assignment once the domain was modelled the way I saw fit. Along the way I made the design decisions. For example, I replaced the Truck Plan's time window with a list of GPS readings, and decided that readings with no country should never count, so that ferry crossings aren't counted as driving. Assumptions and out-of-scope items were recorded (also by Claude) as each decision was made, and each part of the assignment was committed separately, so the git history shows how the solution evolved.
+I started by modelling the domain, together with its unit tests. I moved on to the next parts of the assignment once the domain was modelled the way I saw fit. Along the way I made the design decisions. For example, I replaced the Truck Plan's time window with a list of GPS readings, and decided that readings with no country should never count, so that ferry crossings aren't counted as driving. Assumptions and out-of-scope items were recorded (also by Claude) as each decision was made, and each part of the assignment was committed separately, so the git history shows how the solution evolved.
 
 The haversine distance formula is one part I have not verified myself (see O10).
+
+### Why unit tests rather than a REST API
+
+When I started, I assumed I would end up building a REST API to demonstrate the code. As I worked through the assignment, I realised the domain itself raised so many questions: how to model plans and readings, how to calculate distances, how to measure a driver's age, what counts as driving in Germany. Those decisions are what's interesting to discuss, rather than the plumbing around them.
+
+Using an API to demonstrate would also need a lot of setup before it showed anything interesting: posting drivers, trucks, plans and lists of GPS readings before finally calling the query. Unit tests show the same behaviour directly, one decision per test, and can be read as examples. So I chose to demonstrate the domain code through its tests (see O3). 

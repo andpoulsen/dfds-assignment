@@ -57,7 +57,7 @@ The exercise is deliberately open-ended. This document records the assumptions m
 
 - **O1** Storage: no persistence is implemented, but the model is shaped for a relational database (see A12).
 - **O2** Receiving GPS data: device protocols, messaging, and routing readings to the active plan.
-- **O3** API or user interface.
+- **O3** API or user interface. The code is demonstrated through unit tests instead: an API would need drivers, trucks, plans and readings posted before the query showed anything, while the tests show each decision directly (see the README).
 - **O4** Consistency rules such as a driver or truck being in two plans at the same time.
 - **O5** GPS data quality: jitter, outliers, gaps in the data, removing duplicates.
 - **O6** Device management: replacing devices or moving them between trucks.
