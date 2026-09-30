@@ -38,4 +38,16 @@ public sealed class TruckPlan
         var index = _readings.FindLastIndex(r => r.Timestamp <= reading.Timestamp) + 1;
         _readings.Insert(index, reading);
     }
+
+    /// <summary>
+    /// Approximate distance driven in kilometres: the sum of straight-line distances
+    /// between consecutive readings, in time order.
+    /// </summary>
+    public double DistanceDrivenKm()
+    {
+        var total = 0.0;
+        for (var i = 1; i < _readings.Count; i++)
+            total += _readings[i - 1].Position.DistanceToKm(_readings[i].Position);
+        return total;
+    }
 }

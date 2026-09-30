@@ -98,4 +98,53 @@ public class TruckPlanTests
     {
         Assert.Throws<ArgumentNullException>(() => NewPlan().AddReading(null!));
     }
+
+    [Fact]
+    public void DistanceDrivenKm_is_zero_without_readings()
+    {
+        Assert.Equal(0, NewPlan().DistanceDrivenKm());
+    }
+
+    [Fact]
+    public void DistanceDrivenKm_is_zero_with_a_single_reading()
+    {
+        var plan = NewPlan();
+        plan.AddReading(Reading(Truck, At(8)));
+
+        Assert.Equal(0, plan.DistanceDrivenKm());
+    }
+
+    [Fact]
+    public void DistanceDrivenKm_sums_the_distances_between_consecutive_readings()
+    {
+        var plan = NewPlan();
+        plan.AddReading(new PositionReading(Truck.Id, At(8), new Coordinate(0, 0)));
+        plan.AddReading(new PositionReading(Truck.Id, At(8, 5), new Coordinate(1, 0)));
+        plan.AddReading(new PositionReading(Truck.Id, At(8, 10), new Coordinate(2, 0)));
+
+        Assert.Equal(2 * 111.1949, plan.DistanceDrivenKm(), precision: 3);
+    }
+
+    [Fact]
+    public void DistanceDrivenKm_follows_time_order_not_arrival_order()
+    {
+        var plan = NewPlan();
+        plan.AddReading(new PositionReading(Truck.Id, At(8), new Coordinate(0, 0)));
+        plan.AddReading(new PositionReading(Truck.Id, At(8, 10), new Coordinate(2, 0)));
+        plan.AddReading(new PositionReading(Truck.Id, At(8, 5), new Coordinate(1, 0))); // arrives late
+
+        // In arrival order the route would be 0 → 2 → 1 (3 degrees); in time order it is 0 → 1 → 2 (2 degrees).
+        Assert.Equal(2 * 111.1949, plan.DistanceDrivenKm(), precision: 3);
+    }
+
+    [Fact]
+    public void DistanceDrivenKm_adds_nothing_for_repeated_readings_at_the_same_position()
+    {
+        var plan = NewPlan();
+        plan.AddReading(new PositionReading(Truck.Id, At(8), new Coordinate(0, 0)));
+        plan.AddReading(new PositionReading(Truck.Id, At(8, 5), new Coordinate(0, 0)));  // parked
+        plan.AddReading(new PositionReading(Truck.Id, At(8, 10), new Coordinate(1, 0)));
+
+        Assert.Equal(111.1949, plan.DistanceDrivenKm(), precision: 3);
+    }
 }
