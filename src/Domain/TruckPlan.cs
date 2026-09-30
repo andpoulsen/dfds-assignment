@@ -1,9 +1,14 @@
 namespace Dfds.TruckPlans.Domain;
 
-/// <summary>A single driver driving a single truck for a continuous period.</summary>
+/// <summary>
+/// A single driver driving a single truck for a continuous period.
+/// Starts with no readings; GPS readings are added as they come in from the truck.
+/// </summary>
 public sealed class TruckPlan
 {
-    public TruckPlan(TruckPlanId id, Driver driver, Truck truck, TimeWindow period)
+    private readonly List<PositionReading> _readings = [];
+
+    public TruckPlan(TruckPlanId id, Driver driver, Truck truck)
     {
         ArgumentNullException.ThrowIfNull(driver);
         ArgumentNullException.ThrowIfNull(truck);
@@ -11,19 +16,26 @@ public sealed class TruckPlan
         Id = id;
         Driver = driver;
         Truck = truck;
-        Period = period;
     }
 
     public TruckPlanId Id { get; }
     public Driver Driver { get; }
     public Truck Truck { get; }
-    public TimeWindow Period { get; }
 
-    /// <summary>Whether the reading was produced by this plan's truck during the plan's period.</summary>
-    public bool Covers(PositionReading reading) =>
-        reading.TruckId == Truck.Id && Period.Contains(reading.Timestamp);
+    /// <summary>The plan's GPS readings in chronological order.</summary>
+    public IReadOnlyList<PositionReading> Readings => _readings.AsReadOnly();
 
-    /// <summary>The readings that belong to this plan, in chronological order.</summary>
-    public IReadOnlyList<PositionReading> SelectReadings(IEnumerable<PositionReading> readings) =>
-        readings.Where(Covers).OrderBy(r => r.Timestamp).ToList();
+    /// <summary>
+    /// Adds a reading from this plan's truck. Readings may arrive out of order;
+    /// they are kept sorted by timestamp.
+    /// </summary>
+    public void AddReading(PositionReading reading)
+    {
+        ArgumentNullException.ThrowIfNull(reading);
+        if (reading.TruckId != Truck.Id)
+            throw new ArgumentException("Reading is from a different truck than the plan's.", nameof(reading));
+
+        var index = _readings.FindLastIndex(r => r.Timestamp <= reading.Timestamp) + 1;
+        _readings.Insert(index, reading);
+    }
 }
