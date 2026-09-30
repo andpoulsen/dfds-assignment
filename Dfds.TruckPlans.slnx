@@ -1,5 +1,8 @@
 <Solution>
   <Folder Name="/src/" />
+  <Folder Name="/src/Application/">
+    <Project Path="src/Application/Dfds.TruckPlans.Application.csproj" />
+  </Folder>
   <Folder Name="/src/Domain/">
     <Project Path="src/Domain/Dfds.TruckPlans.Domain.csproj" />
   </Folder>
@@ -7,6 +10,9 @@
     <Project Path="src/Infrastructure/Dfds.TruckPlans.Infrastructure.csproj" />
   </Folder>
   <Folder Name="/tests/" />
+  <Folder Name="/tests/Application.Tests/">
+    <Project Path="tests/Application.Tests/Dfds.TruckPlans.Application.Tests.csproj" />
+  </Folder>
   <Folder Name="/tests/Domain.Tests/">
     <Project Path="tests/Domain.Tests/Dfds.TruckPlans.Domain.Tests.csproj" />
   </Folder>

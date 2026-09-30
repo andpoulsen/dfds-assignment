@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Domain\Dfds.TruckPlans.Domain.csproj" />
+    <ProjectReference Include="..\Application\Dfds.TruckPlans.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

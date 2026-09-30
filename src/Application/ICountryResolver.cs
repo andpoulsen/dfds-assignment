@@ -1,4 +1,6 @@
-namespace Dfds.TruckPlans.Domain;
+using Dfds.TruckPlans.Domain;
+
+namespace Dfds.TruckPlans.Application;
 
 /// <summary>Determines which country a GPS coordinate is in.</summary>
 public interface ICountryResolver

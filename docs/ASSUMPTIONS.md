@@ -41,15 +41,17 @@ The exercise is deliberately open-ended. This document records the assumptions m
 - **A21** Boundaries are simplified, so points close to a border or coastline can be assigned to the wrong country or to none. At the 1:50m scale this can be several hundred metres or more; Copenhagen's city centre, for example, resolves to no country. The more detailed 1:10m dataset (about 13 MB) gives the same result there, so it wasn't worth the size. This matters for DFDS, since ports and harbours lie on the coast.
 - **A22** Points at sea, including on ferries, resolve to no country. The domain returns null for these rather than guessing.
 - **A23** A point exactly on a border between two countries is assigned to whichever country is found first.
-- **A24** `ICountryResolver` is defined in the Domain project and implemented in Infrastructure, so dependencies point inwards: Infrastructure depends on Domain, never the reverse. The code that needs country lookup (the February query) therefore doesn't depend on NetTopologySuite or the boundary data, and can be tested with a simple fake. Country lookup is a need of a use case rather than a domain concept, so the interface will move to an Application project when the February query is built. Creating that project now, for a single interface, would be premature.
+- **A24** `ICountryResolver` is defined in the Application project, next to the February query that uses it, and implemented in Infrastructure. Dependencies point inwards (Infrastructure → Application → Domain, never the reverse), so the query doesn't depend on NetTopologySuite or the boundary data, and can be tested with a simple fake. It started out in the Domain project and moved to Application when the query was built, since country lookup is a need of a use case rather than a domain concept.
 
-### Open questions
+### The February 2024 query
 
-To be decided when the February 2024 query is built:
-
-- Does "over the age of 50" mean strictly above 50?
-- On which date is age measured: the day of driving, the start of the plan, or the query date?
-- Is February read in UTC or in German local time?
+- **A25** "Drivers over the age of 50" means strictly older than 50, i.e. 51 or older.
+- **A26** Which drivers count is decided by a filter passed to the query, so the same query can answer other questions than "over 50". The filter is given the driver and the date (UTC) of the plan's first reading, so a driver's age is measured once per plan, on that date. If a birthday falls during a plan, the age at the start applies to the whole plan. `DriverFilters.OlderThan(50)` answers the brief's question.
+- **A27** "February 2024" is read in UTC: from 1 February 00:00 UTC (inclusive) to 1 March 00:00 UTC (exclusive). German local time would be simple to support, but countries spanning several time zones would add complexity that was left out for simplicity.
+- **A28** A stretch between two consecutive readings is split at its midpoint. Each reading owns half the stretch, and that half counts only if the reading is in the requested country and inside the period. A stretch crossing a border or the start or end of the month therefore counts half. Stretches are a few kilometres long, so the error per crossing is small.
+- **A29** A reading that resolves to no country (at sea, on a ferry, or on a simplified coastline, see A21) counts as not being in the requested country. Ferry crossings are therefore never counted as driving. The cost is a small under-count near coasts and ports, such as Kiel or Rostock, where the simplified coastline misses land. Carrying the previous reading's country forward was considered, but rejected: it would count whole ferry crossings as driven in the country the ship left from.
+- **A30** The query takes the Truck Plans as input; there is no storage (O1). The caller decides which plans to pass in.
+- **A31** Country codes are compared case-insensitively (`de` matches `DE`).
 
 ## Out of scope
 
@@ -65,4 +67,4 @@ To be decided when the February 2024 query is built:
 - **O10** Independent verification of the haversine implementation. The author, Anders Poulsen, has not verified the formula or its implementation himself. The implementation was written by Claude (an AI assistant) and trusted, since learning the underlying mathematics well enough to check it was too much for the time available. The tests give partial assurance: 1° of latitude equals 111.195 km, which follows from basic geometry (2π × 6,371 km ÷ 360), and Hamburg to Munich comes out at about 612 km, which matches published straight-line distances. The other reference values in the tests were produced with the same formula, so they only confirm that the code matches the formula as written.
 - **O11** External reverse-geocoding services (e.g. Nominatim, Azure Maps, Google). They are more accurate near borders and coastlines, but bring rate limits, cost, network dependency and privacy concerns. They could be added behind `ICountryResolver`.
 - **O12** Keeping the boundary data up to date, and handling disputed borders beyond what Natural Earth provides.
-- **O13** Assigning a country to readings that resolve to none, for example using the nearest country or the previous reading's country. This matters for coastal areas and ports (A21) and becomes relevant for the February query.
+- **O13** Assigning a country to coastal readings that resolve to none, for example using the nearest country, without mistaking ferry crossings for driving. This would remove the small under-count near coasts and ports described in A29.
